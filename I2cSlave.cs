@@ -11,7 +11,9 @@ namespace Magellanic.I2C
 
         byte[] GetDeviceId();
 
-        Task Initialize(byte initialisationAddress);
+        byte GetI2cAddress();
+
+        Task Initialize();
 
         bool IsConnected();
     }

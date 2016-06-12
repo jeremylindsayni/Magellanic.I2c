@@ -10,11 +10,13 @@ namespace Magellanic.I2C
     {
         public byte[] DeviceIdentifier { get; set; }
 
+        public abstract byte GetI2cAddress();
+
         public I2cDevice Slave { get; set; }
 
         public abstract byte[] GetDeviceId();
 
-        public async Task Initialize(byte initialisationAddress)
+        public async Task Initialize()
         {
             string advancedQueryString = I2cDevice.GetDeviceSelector();
 
@@ -25,7 +27,7 @@ namespace Magellanic.I2C
                 throw new Exception("No I2C controllers are connected.");
             }
 
-            var i2cSettings = new I2cConnectionSettings(initialisationAddress);
+            var i2cSettings = new I2cConnectionSettings(this.GetI2cAddress());
 
             i2cSettings.BusSpeed = I2cBusSpeed.FastMode;
 
