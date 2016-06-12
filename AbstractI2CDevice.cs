@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
 using Windows.Devices.I2c;
@@ -10,35 +8,68 @@ namespace Magellanic.I2C
 {
     public abstract class AbstractI2CDevice : I2cSlave
     {
+        public byte[] DeviceIdentifier { get; set; }
+
         public I2cDevice Slave { get; set; }
 
-        public async void Initialize(byte initialisationAddress)
+        public abstract byte[] GetDeviceId();
+
+        public async Task Initialize(byte initialisationAddress)
         {
-            string aqs = I2cDevice.GetDeviceSelector();
+            string advancedQueryString = I2cDevice.GetDeviceSelector();
 
-            var dis = await DeviceInformation.FindAllAsync(aqs);
+            var deviceInformations = await DeviceInformation.FindAllAsync(advancedQueryString);
 
-            if (dis.Count == 0)
+            if (!deviceInformations.Any())
             {
-                throw new Exception("No I2C controllers were found on the system");
+                throw new Exception("No I2C controllers are connected.");
             }
 
-            var settings = new I2cConnectionSettings(initialisationAddress);
+            var i2cSettings = new I2cConnectionSettings(initialisationAddress);
 
-            settings.BusSpeed = I2cBusSpeed.FastMode;
+            i2cSettings.BusSpeed = I2cBusSpeed.FastMode;
 
-            var i2cDevice = await I2cDevice.FromIdAsync(dis[0].Id, settings);
+            var i2cDevice = await I2cDevice.FromIdAsync(deviceInformations[0].Id, i2cSettings);
 
             if (i2cDevice == null)
             {
                 throw new Exception(string.Format(
-                    "Slave address {0} on I2C Controller {1} is currently in use by " +
-                    "another application. Please ensure that no other applications are using I2C.",
-                    settings.SlaveAddress,
-                    dis[0].Id));
+                    "Slave address {0} on I2C Controller {1} is currently in use by another device or application",
+                    i2cSettings.SlaveAddress,
+                    deviceInformations[0].Id));
             }
 
             this.Slave = i2cDevice;
+        }
+
+        public bool IsConnected()
+        {
+            if (this.DeviceIdentifier?.Length == 0)
+            {
+                throw new Exception("Specify DeviceIdentifier byte(s) before checking if the device is connected.");
+            }
+
+            var identifierReadFromDevice = this.GetDeviceId();
+
+            if (identifierReadFromDevice?.Length == 0)
+            {
+                throw new Exception("No bytes were read back from the device for identification");
+            }
+
+            if (identifierReadFromDevice == this.DeviceIdentifier)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < this.DeviceIdentifier.Length; i++)
+            {
+                if (identifierReadFromDevice[i] != this.DeviceIdentifier[i])
+                {
+                    throw new Exception("Device has an unexpected device identifier.");
+                }
+            }
+
+            return true;
         }
     }
 }
