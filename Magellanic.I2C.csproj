@@ -108,6 +108,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbstractI2CDevice.cs" />
+    <Compile Include="Exceptions\I2cDeviceConnectionException.cs" />
+    <Compile Include="Exceptions\I2cSlaveAddressInUseException.cs" />
+    <Compile Include="Exceptions\I2cDeviceNotFoundException.cs" />
+    <Compile Include="I2cDiagnostics.cs" />
     <Compile Include="I2cSlave.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\Magellanic.I2C.rd.xml" />

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Magellanic.I2C.Exceptions;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
@@ -10,11 +11,11 @@ namespace Magellanic.I2C
     {
         public byte[] DeviceIdentifier { get; set; }
 
-        public abstract byte GetI2cAddress();
-
         public I2cDevice Slave { get; set; }
 
         public abstract byte[] GetDeviceId();
+
+        public abstract byte GetI2cAddress();
 
         public async Task Initialize()
         {
@@ -24,7 +25,7 @@ namespace Magellanic.I2C
 
             if (!deviceInformations.Any())
             {
-                throw new Exception("No I2C controllers are connected.");
+                throw new I2cDeviceNotFoundException("No I2C controllers are connected.");
             }
 
             var i2cSettings = new I2cConnectionSettings(this.GetI2cAddress());
@@ -35,10 +36,8 @@ namespace Magellanic.I2C
 
             if (i2cDevice == null)
             {
-                throw new Exception(string.Format(
-                    "Slave address {0} on I2C Controller {1} is currently in use by another device or application",
-                    i2cSettings.SlaveAddress,
-                    deviceInformations[0].Id));
+                throw new I2cSlaveAddressInUseException(
+                    $"Slave address {i2cSettings.SlaveAddress} on I2C Controller {deviceInformations[0].Id} is currently in use by another device or application");
             }
 
             this.Slave = i2cDevice;
@@ -48,14 +47,14 @@ namespace Magellanic.I2C
         {
             if (this.DeviceIdentifier?.Length == 0)
             {
-                throw new Exception("Specify DeviceIdentifier byte(s) before checking if the device is connected.");
+                throw new I2cDeviceConnectionException("Specify DeviceIdentifier byte(s) before checking if the device is connected.");
             }
 
             var identifierReadFromDevice = this.GetDeviceId();
 
             if (identifierReadFromDevice?.Length == 0)
             {
-                throw new Exception("No bytes were read back from the device for identification");
+                throw new I2cDeviceConnectionException("No bytes were read back from the device for identification");
             }
 
             if (identifierReadFromDevice == this.DeviceIdentifier)
@@ -67,7 +66,7 @@ namespace Magellanic.I2C
             {
                 if (identifierReadFromDevice[i] != this.DeviceIdentifier[i])
                 {
-                    throw new Exception("Device has an unexpected device identifier.");
+                    throw new I2cDeviceConnectionException("Device has an unexpected device identifier.");
                 }
             }
 
